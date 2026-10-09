@@ -23,6 +23,19 @@ const NOTES = `## Agent working agreement (dev-agent-setup)
 const START = '<!-- dev-agent-setup:begin -->';
 const END = '<!-- dev-agent-setup:end -->';
 const MARKED_NOTES = `${START}\n${NOTES}${END}\n`;
+const DEFAULT_GUIDELINES = `# AGENTS.md
+
+## Setup commands
+- Install deps: \`pnpm install\`
+- Start dev server: \`pnpm dev\`
+- Run tests: \`pnpm test\`
+
+## Code style
+- TypeScript strict mode
+- Single quotes, no semicolons
+- Use functional patterns where possible
+`;
+const DEFAULT_AGENTS = `${DEFAULT_GUIDELINES}\n${MARKED_NOTES}`;
 const REACT_GUIDELINES = [
   "# Repository Guidelines",
   "",
@@ -102,6 +115,14 @@ function mergeNotes(old) {
   if (a !== -1) return old.slice(0, a) + MARKED_NOTES.trimEnd() + old.slice(b + END.length);
   return old ? `${old.replace(/\s*$/, '')}\n\n${MARKED_NOTES}` : MARKED_NOTES;
 }
+function mergeClaudeReference(old) {
+  const reference = '@AGENTS.md';
+  const a = old.indexOf(START), b = old.indexOf(END);
+  if ((a === -1) !== (b === -1) || (a !== -1 && b < a)) throw new Error('Malformed agent instructions marker');
+  if (a !== -1) return old.slice(0, a) + reference + old.slice(b + END.length);
+  if (new RegExp(`^${reference.replace('.', '\\.')}$`, 'm').test(old)) return old;
+  return old ? `${old.replace(/\s*$/, '')}\n\n${reference}\n` : `${reference}\n`;
+}
 function mergeRules(old) {
   // Generated file lives separately to avoid changing user-authored policy files.
   const a = old.indexOf('# dev-agent-setup balanced preset.');
@@ -138,12 +159,18 @@ export async function setup({ project, agents = ['claude','codex'], tags = [], d
   const jobs = [];
   if (agents.includes('claude')) {
     jobs.push({ file: '.claude/settings.json', transform(old) { let parsed = {}; if (old !== null) { try { parsed = JSON.parse(old); } catch { throw new Error('Invalid JSON in .claude/settings.json; left unchanged'); } } return JSON.stringify(mergeClaude(parsed), null, 2) + '\n'; } });
-    jobs.push({ file: 'CLAUDE.md', transform(old) { return mergeNotes(old ?? ''); } });
+    jobs.push({ file: 'CLAUDE.md', transform(old) { return mergeClaudeReference(old ?? ''); } });
   }
   if (agents.includes('codex')) {
     jobs.push({ file: '.codex/config.toml', transform(old) { return patchTopLevelToml(old ?? ''); } });
     jobs.push({ file: '.codex/rules/balanced.rules', transform(old) { return old === null ? CODEX_RULES : mergeRules(old); } });
-    jobs.push({ file: 'AGENTS.md', transform(old) { if (tags.includes('react') && (old === null || old.trim() === MARKED_NOTES.trim())) return REACT_AGENTS; return mergeNotes(old ?? ''); } });
+  }
+  if (agents.includes('claude') || agents.includes('codex')) {
+    jobs.push({ file: 'AGENTS.md', transform(old) {
+      if (tags.includes('react') && (old === null || [MARKED_NOTES, DEFAULT_AGENTS].some(generated => old.trim() === generated.trim()))) return REACT_AGENTS;
+      if (!tags.length && (old === null || old.trim() === MARKED_NOTES.trim())) return DEFAULT_AGENTS;
+      return mergeNotes(old ?? '');
+    } });
   }
   // Plan every change and validate all source files before touching the filesystem.
   const changes = [];

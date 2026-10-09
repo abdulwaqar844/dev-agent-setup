@@ -19,8 +19,16 @@ test('creates both agent configurations and instructions', async t => {
   assert.ok(conf.permissions.deny.includes('Read(./.env)'));
   assert.match(await read(dir,'.codex/config.toml'), /approval_policy = "on-request"/);
   assert.match(await read(dir,'.codex/rules/balanced.rules'), /decision="forbidden"/);
-  assert.match(await read(dir,'CLAUDE.md'), /Agent working agreement/);
-  assert.match(await read(dir,'AGENTS.md'), /Agent working agreement/);
+  assert.equal(await read(dir,'CLAUDE.md'), '@AGENTS.md\n');
+  const agents = await read(dir,'AGENTS.md');
+  assert.match(agents, /^# AGENTS\.md/);
+  assert.match(agents, /- Install deps: `pnpm install`/);
+  assert.match(agents, /- Start dev server: `pnpm dev`/);
+  assert.match(agents, /- Run tests: `pnpm test`/);
+  assert.match(agents, /TypeScript strict mode/);
+  assert.match(agents, /Single quotes, no semicolons/);
+  assert.match(agents, /Use functional patterns where possible/);
+  assert.match(agents, /Agent working agreement/);
   const again = await setup({project:dir});
   assert.ok(again.every(x => x.action === 'unchanged'));
 });
@@ -93,4 +101,24 @@ test("upgrades an untouched generated AGENTS.md when the react tag is added", as
   const changed = await setup({project:dir,agents:["codex"],tags:["react"]});
   assert.equal(changed.find(x => x.file === "AGENTS.md").action,"update");
   assert.match(await read(dir,"AGENTS.md"), /^# Repository Guidelines/);
+});
+test('creates AGENTS.md for Claude-only setup so its reference resolves', async t => {
+  const dir = await temp(t);
+  const changes = await setup({project:dir,agents:['claude']});
+  assert.deepEqual(changes.map(change => change.file), ['.claude/settings.json', 'CLAUDE.md', 'AGENTS.md']);
+  assert.equal(await read(dir,'CLAUDE.md'), '@AGENTS.md\n');
+  assert.match(await read(dir,'AGENTS.md'), /^# AGENTS\.md/);
+});
+test('replaces legacy generated Claude instructions with the AGENTS.md reference', async t => {
+  const dir = await temp(t);
+  await setup({project:dir});
+  await fs.writeFile(path.join(dir,'CLAUDE.md'), '<!-- dev-agent-setup:begin -->\nold generated notes\n<!-- dev-agent-setup:end -->\n');
+  await setup({project:dir});
+  assert.equal(await read(dir,'CLAUDE.md'), '@AGENTS.md\n');
+});
+test('preserves custom Claude instructions when adding the AGENTS.md reference', async t => {
+  const dir = await temp(t);
+  await fs.writeFile(path.join(dir,'CLAUDE.md'), '# Claude-specific notes\nKeep this.\n');
+  await setup({project:dir,agents:['claude']});
+  assert.equal(await read(dir,'CLAUDE.md'), '# Claude-specific notes\nKeep this.\n\n@AGENTS.md\n');
 });

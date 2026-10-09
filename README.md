@@ -37,6 +37,7 @@ The CLI generates project-scoped configuration files such as:
 - `AGENTS.md`
 
 These files are added to the target repository so the project has its own agent instructions and safe defaults.
+When no tag is selected, `AGENTS.md` includes default pnpm setup commands and TypeScript style guidance. `CLAUDE.md` references `AGENTS.md` so both agents share the same project instructions.
 
 ## Notes
 
