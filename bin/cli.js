@@ -1,9 +1,12 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { setup } from '../src/setup.js';
 
+const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
 function help() {
-  console.log(`dev-agent-setup v0.1.0
+  console.log(`dev-agent-setup v${version}
 
 Usage:
   dev-agent-setup init [--path DIR] [--agents claude,codex] [--preset balanced] [--tag react] [--dry-run]

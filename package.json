@@ -2,6 +2,14 @@
   "name": "dev-agent-setup",
   "version": "1.2.1",
   "description": "Non-destructive balanced project configuration for Claude Code and OpenAI Codex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abdulwaqar844/dev-agent-setup.git"
+  },
+  "homepage": "https://github.com/abdulwaqar844/dev-agent-setup#readme",
+  "bugs": {
+    "url": "https://github.com/abdulwaqar844/dev-agent-setup/issues"
+  },
   "type": "module",
   "bin": {
     "dev-agent-setup": "bin/cli.js"
@@ -13,6 +21,10 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "files": [
     "bin/",
