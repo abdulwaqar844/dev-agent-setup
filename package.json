@@ -1,0 +1,32 @@
+{
+  "name": "dev-agent-setup",
+  "version": "1.0.0",
+  "description": "Non-destructive balanced project configuration for Claude Code and OpenAI Codex",
+  "type": "module",
+  "bin": {
+    "dev-agent-setup": "bin/cli.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check bin/cli.js && node --check src/setup.js",
+    "pack:check": "npm pack --dry-run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "claude-code",
+    "agent",
+    "permissions",
+    "cli",
+    "configuration"
+  ]
+}
