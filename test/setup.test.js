@@ -77,3 +77,20 @@ test('existing sandbox table gets missing network policy only, and preserves exp
   s = await read(dir,'.codex/config.toml');
   assert.match(s,/network_access = true/);
 });
+test("creates React repository guidelines when the react tag is selected", async t => {
+  const dir = await temp(t);
+  await setup({project:dir,agents:["codex"],tags:["react"]});
+  const agents = await read(dir,"AGENTS.md");
+  assert.match(agents, /^# Repository Guidelines/);
+  assert.match(agents, /Vite-powered React dashboard built with Material UI/);
+  assert.match(agents, /Use Node 24/);
+  assert.match(agents, /<!-- dev-agent-setup:begin -->/);
+  assert.match(agents, /<!-- dev-agent-setup:end -->/);
+});
+test("upgrades an untouched generated AGENTS.md when the react tag is added", async t => {
+  const dir = await temp(t);
+  await setup({project:dir,agents:["codex"]});
+  const changed = await setup({project:dir,agents:["codex"],tags:["react"]});
+  assert.equal(changed.find(x => x.file === "AGENTS.md").action,"update");
+  assert.match(await read(dir,"AGENTS.md"), /^# Repository Guidelines/);
+});

@@ -17,13 +17,13 @@ It is designed to be run directly against a target project folder without changi
 Run it with npx in one step:
 
 ```bash
-npx dev-agent-setup init --path /path/to/your/project --agents claude,codex --preset balanced
+npx dev-agent-setup init --path /path/to/your/project --agents claude,codex --preset balanced --tag react
 ```
 
 Optional preview mode:
 
 ```bash
-npx dev-agent-setup init --path /path/to/your/project --agents claude,codex --preset balanced --dry-run
+npx dev-agent-setup init --path /path/to/your/project --agents claude,codex --preset balanced --tag react --dry-run
 ```
 
 ## Files created
