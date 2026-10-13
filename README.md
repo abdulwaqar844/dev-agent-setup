@@ -14,16 +14,27 @@ It is designed to be run directly against a target project folder without changi
 
 ## Usage
 
-Run it with npx in one step:
+Run it with npx in one step (specify a path):
 
 ```bash
 npx dev-agent-setup init --path /path/to/your/project --agents claude,codex --preset balanced --tag react
 ```
 
-Optional preview mode:
+Or run it from your project's root directory without specifying `--path` — the CLI will apply changes to the current working directory:
+
+```bash
+# Run from the project root (no --path required)
+npx dev-agent-setup init --agents claude,codex --preset balanced --tag react
+```
+
+Optional preview mode with `--dry-run` (with or without `--path`):
 
 ```bash
 npx dev-agent-setup init --path /path/to/your/project --agents claude,codex --preset balanced --tag react --dry-run
+
+# or, from project root:
+
+npx dev-agent-setup init --agents claude,codex --preset balanced --tag react --dry-run
 ```
 
 ## Files created
