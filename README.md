@@ -55,3 +55,9 @@ When no tag is selected, `AGENTS.md` includes default pnpm setup commands and Ty
 - The command updates the selected repository rather than your global setup.
 - Existing project files are merged carefully, and backups are created for modified files.
 - Review the generated configuration before relying on it in a real project.
+
+## Codex web search
+
+New project configurations default to `web_search = "live"` in `.codex/config.toml`. Supported values are `disabled`, `cached`, `indexed`, and `live`. Running setup preserves any existing valid choice and upgrades the legacy `web_search = "allowed"` setting to `live`. Other unsupported or duplicate top-level values are rejected before files are changed.
+
+If an existing project fails to start Codex with an `unknown variant 'allowed'` error, rerun setup or manually replace `web_search = "allowed"` with `web_search = "live"`.
