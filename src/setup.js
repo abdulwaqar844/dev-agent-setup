@@ -100,7 +100,7 @@ function patchTopLevelToml(old) {
   }
   // Codex web_search is separate from approval policy. Keep valid user choices,
   // but migrate the obsolete "allowed" value to the requested default "live".
-  const searchRe = /^([ \\t]*web_search[ \\t]*=[ \\t]*)([^\\r\\n#]*)([^\\r\\n]*)$/gm;
+  const searchRe = /^([ \t]*web_search[ \t]*=[ \t]*)([^\r\n#]*)([^\r\n]*)$/gm;
   const searchMatches = [...updated.matchAll(searchRe)];
   if (searchMatches.length > 1) throw new Error('Duplicate web_search in Codex top-level config');
   if (searchMatches.length) {
