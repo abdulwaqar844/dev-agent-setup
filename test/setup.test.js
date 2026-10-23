@@ -18,6 +18,7 @@ test('creates both agent configurations and instructions', async t => {
   const conf = JSON.parse(await read(dir,'.claude/settings.json'));
   assert.ok(conf.permissions.deny.includes('Read(./.env)'));
   assert.match(await read(dir,'.codex/config.toml'), /approval_policy = "on-request"/);
+  assert.match(await read(dir,'.codex/config.toml'), /web_search = "live"/);
   assert.match(await read(dir,'.codex/rules/balanced.rules'), /decision="forbidden"/);
   assert.equal(await read(dir,'CLAUDE.md'), '@AGENTS.md\n');
   const agents = await read(dir,'AGENTS.md');
@@ -121,4 +122,38 @@ test('preserves custom Claude instructions when adding the AGENTS.md reference',
   await fs.writeFile(path.join(dir,'CLAUDE.md'), '# Claude-specific notes\nKeep this.\n');
   await setup({project:dir,agents:['claude']});
   assert.equal(await read(dir,'CLAUDE.md'), '# Claude-specific notes\nKeep this.\n\n@AGENTS.md\n');
+});
+
+test('repairs legacy allowed web_search without changing tables or comments', async t => {
+  const dir = await temp(t);
+  await fs.mkdir(path.join(dir, '.codex'));
+  await fs.writeFile(path.join(dir, '.codex/config.toml'), 'web_search = "allowed" # old setting\n[features]\nweb_search = "custom"\n');
+  await setup({ project: dir, agents: ['codex'] });
+  const toml = await read(dir, '.codex/config.toml');
+  assert.match(toml, /^web_search = "live" # old setting$/m);
+  assert.match(toml, /\[features\]\nweb_search = "custom"/);
+  const repeated = await setup({ project: dir, agents: ['codex'] });
+  assert.ok(repeated.every(change => change.action === 'unchanged'));
+});
+test('preserves supported Codex web_search choices', async t => {
+  for (const choice of ['disabled', 'cached', 'indexed', 'live']) {
+    await t.test(choice, async t => {
+      const dir = await temp(t);
+      await fs.mkdir(path.join(dir, '.codex'));
+      await fs.writeFile(path.join(dir, '.codex/config.toml'), `web_search = "${choice}"\n`);
+      await setup({ project: dir, agents: ['codex'] });
+      const toml = await read(dir, '.codex/config.toml');
+      assert.match(toml, new RegExp(`^web_search = "${choice}"$`, 'm'));
+      assert.equal((toml.match(/^web_search\s*=/gm) ?? []).length, 1);
+    });
+  }
+});
+test('rejects unsupported and duplicated top-level web_search without writing', async t => {
+  for (const original of ['web_search = "sometimes"\n', 'web_search = "allowed"\nweb_search = "live"\n']) {
+    const dir = await temp(t);
+    await fs.mkdir(path.join(dir, '.codex'));
+    await fs.writeFile(path.join(dir, '.codex/config.toml'), original);
+    await assert.rejects(setup({ project: dir, agents: ['codex'] }), /Invalid Codex web_search|Duplicate web_search/);
+    assert.equal(await read(dir, '.codex/config.toml'), original);
+  }
 });

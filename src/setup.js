@@ -10,6 +10,7 @@ export const CLAUDE_PERMISSIONS = {
 };
 
 const CODEX_TOML_KEYS = { approval_policy: '"on-request"', sandbox_mode: '"workspace-write"' };
+const CODEX_WEB_SEARCH_VALUES = new Set(['disabled', 'cached', 'indexed', 'live']);
 const CODEX_SANDBOX_TABLE = '[sandbox_workspace_write]\nnetwork_access = false\n';
 const CODEX_RULES = `# dev-agent-setup balanced preset. Project rules only load after trust approval.\n# Command prefix rules are token-based, not a full shell security policy.\nprefix_rule(pattern=["git", "status"], decision="allow")\nprefix_rule(pattern=["git", "diff"], decision="allow")\nprefix_rule(pattern=["git", "log"], decision="allow")\nprefix_rule(pattern=["git", "push"], decision="prompt", justification="Review remote changes before pushing")\nprefix_rule(pattern=["npm", "install"], decision="prompt", justification="Installing dependencies may execute lifecycle scripts")\nprefix_rule(pattern=["npm", "publish"], decision="prompt", justification="Publishing releases a public package")\nprefix_rule(pattern=["git", "reset", "--hard"], decision="forbidden", justification="Destructive reset is blocked")\nprefix_rule(pattern=["git", "clean", "-fd"], decision="forbidden", justification="Destructive clean is blocked")\n`;
 const NOTES = `## Agent working agreement (dev-agent-setup)
@@ -96,6 +97,19 @@ function patchTopLevelToml(old) {
     if (matches.length > 1) throw new Error(`Duplicate ${key} in Codex top-level config`);
     if (matches.length) updated = updated.replace(re, `$1${value}$3`);
     else updated = `${key} = ${value}\n` + updated;
+  }
+  // Codex web_search is separate from approval policy. Keep valid user choices,
+  // but migrate the obsolete "allowed" value to the requested default "live".
+  const searchRe = /^([ \t]*web_search[ \t]*=[ \t]*)([^\r\n#]*)([^\r\n]*)$/gm;
+  const searchMatches = [...updated.matchAll(searchRe)];
+  if (searchMatches.length > 1) throw new Error('Duplicate web_search in Codex top-level config');
+  if (searchMatches.length) {
+    const configured = searchMatches[0][2].trim();
+    const value = /^"([^"]+)"$/.exec(configured)?.[1];
+    if (value === 'allowed') updated = updated.replace(searchRe, '$1"live"$3');
+    else if (!CODEX_WEB_SEARCH_VALUES.has(value)) throw new Error(`Invalid Codex web_search value: ${configured}`);
+  } else {
+    updated = 'web_search = "live"\n' + updated;
   }
   next = updated + tail;
   const count = (next.match(/^\s*\[sandbox_workspace_write\]\s*(?:#.*)?$/gm) ?? []).length;
